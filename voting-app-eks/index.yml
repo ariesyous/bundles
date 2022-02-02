@@ -1,0 +1,155 @@
+schema_version: v0.0.1
+
+project:
+  name: Voting App
+
+environment:
+  name: Staging
+    description: Voting App Infrastructure on AWS
+    revision:
+      driver: github
+      repo: https://github.com/cldcvr/codepipes-tutorials
+      dir: voting/infra/aws/eks
+      identifier: main
+      type: branch
+    variables:
+      - type: tf_var
+        key: aws_region
+        value: us-east-1
+      - type: tf_var
+        key: cluster-name
+        value: voting-eks-demo
+      - type: tf_var
+        key: node-group-name
+        value: voting-node-group
+      - type: tf_var
+        key: role-eks-demo-node
+        value: voting-eks-demo-node
+      - type: tf_var
+        key: vpc-eks-tag-name
+        value: voting-eks-demo-tag-name
+      - type: tf_var
+        key: cluster_ipv4_cidr
+        value: 10.0.0.0/16
+    policySet: Unrestricted
+    creds:
+      - cloud
+
+
+application:
+  name: voting-result
+    description: Public vote results service
+    appConfig:
+      version: 1
+    artifacts:
+      - name: Voting_Result_Container_Image
+        id: 3e9f0abf-c768-499d-8c46-23455622dc
+        containerImage:
+          provider: dockerhub_container_registry
+          repo: cldcvr/codepipes-example-result
+          reference: latest
+    creds:
+      - cloud
+      
+  name: voting-app
+    description: Public voting frontend service
+    appConfig:
+      version: 1
+    artifacts:
+      - name: Voting_Container_Image
+        id: 3e9f0abf-c768-499d-8c46-577777222dc
+        containerImage:
+          provider: dockerhub_container_registry
+          repo: cldcvr/codepipes-example-vote
+          reference: latest
+    creds:
+      - cloud
+
+
+  name: voting-worker
+  description: Standalone worker for voting
+  appConfig:
+    version: 1
+  artifacts:
+    - name: Worker_Container_Image
+      id: 3e9f0abf-c768-499d-8c46-52455622dc
+      containerImage:
+        provider: dockerhub_container_registry
+        repo: cldcvr/codepipes-example-worker
+        reference: latest
+  creds:
+    - cloud
+
+
+
+deployments:
+  name: VoteDeployment
+  description: Vote Service Deployment
+  deploymentConfig:
+    artifact:
+      id: 3e9f0abf-c768-499d-8c46-577777222dc
+    template:
+      moduleRefId: aws:basic-eks-regional@1
+      inputs:
+        cluster: "$cluster"
+        region:  "$region"
+        roleArn:  "$roleArn"
+        ports:
+          -  name: "vote"
+             containerPort: 80
+             protocol": "TCP"
+             healthCheck: "/health"
+    env:
+      cluster: "${terraform.cluster_name.value}"
+      region: "${terraform.cluster_region.value}"
+      roleArn: "${terraform.eks_arn.value}"
+      PG_HOST: "${terraform.rds_instance_address.value}"
+      REDIS_HOST: "${terraform.redis_hostname.value}"
+    summary:
+      - name: Service URL
+        command: sleep 10 ; echo http://`kubectl get ingress -n voting-app -o=jsonpath={.items[*].status.loadBalancer.ingress[*].hostname}`
+  
+  name: VoteResultDeployment
+  description: Vote result Service Deployment
+  deploymentConfig:
+    artifact:
+      id: 3e9f0abf-c768-499d-8c46-23455622dc
+    template:
+      moduleRefId: aws:basic-eks-regional@1
+      inputs:
+        cluster: "$cluster"
+        region:  "$region"
+        roleArn:  "$roleArn"
+        ports:
+          -  name: "vote"
+             containerPort: 80
+             protocol": "TCP"
+             healthCheck: "/health"
+    env:
+      cluster: "${terraform.cluster_name.value}"
+      region: "${terraform.cluster_region.value}"
+      roleArn: "${terraform.eks_arn.value}"
+      PG_HOST: "${terraform.rds_instance_address.value}"
+      REDIS_HOST: "${terraform.redis_hostname.value}"
+    summary:
+      - name: Service URL
+        command: sleep 10 ; echo http://`kubectl get ingress -n voting-result -o=jsonpath={.items[*].status.loadBalancer.ingress[*].hostname}`
+  
+  name: WorkerDeployment
+  description: Worker Deployment
+  deploymentConfig:
+    artifact:
+      id: 3e9f0abf-c768-499d-8c46-52455622dc
+    template:
+      moduleRefId: aws:basic-eks-regional@1
+      inputs:
+        cluster: "$cluster"
+        region:  "$region"
+        roleArn:  "$roleArn"
+    env:
+      cluster: "${terraform.cluster_name.value}"
+      region: "${terraform.cluster_region.value}"
+      roleArn: "${terraform.eks_arn.value}"
+      PG_HOST: "${terraform.rds_instance_address.value}"
+      REDIS_HOST: "${terraform.redis_hostname.value}"
+
