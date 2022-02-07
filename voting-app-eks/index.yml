@@ -109,45 +109,44 @@ environment:
 
 applications:
   - name: voting-result
-      description: Public vote results service
-      appConfig:
+    description: Public vote results service
+    appConfig:
+    version: 1
+    artifacts:
+    - name: Voting_Result_Container_Image
+      id: 3e9f0abf-c768-499d-8c46-23455622dc
+      containerImage:
+        provider: dockerhub_container_registry
+        repo: cldcvr/codepipes-example-result
+        reference: latest
+    creds:
+    - cloud
+
+  - name: voting-app
+    description: Public voting frontend service
+    appConfig:
       version: 1
-      artifacts:
-      - name: Voting_Result_Container_Image
-        id: 3e9f0abf-c768-499d-8c46-23455622dc
-        containerImage:
-          provider: dockerhub_container_registry
-          repo: cldcvr/codepipes-example-result
-          reference: latest
-      creds:
+    artifacts:
+    - name: Voting_Container_Image
+      id: 3e9f0abf-c768-499d-8c46-577777222dc
+      containerImage:
+        provider: dockerhub_container_registry
+        repo: cldcvr/codepipes-example-vote
+        reference: latest
+    creds:
       - cloud
 
 
-  - name: voting-app
-      description: Public voting frontend service
-      appConfig:
-        version: 1
-      artifacts:
-      - name: Voting_Container_Image
-        id: 3e9f0abf-c768-499d-8c46-577777222dc
+  - name: voting-worker
+    description: Standalone worker for voting
+    appConfig:
+      version: 1
+    artifacts:
+      - name: Worker_Container_Image
+        id: 3e9f0abf-c768-499d-8c46-52455622dc
         containerImage:
           provider: dockerhub_container_registry
-          repo: cldcvr/codepipes-example-vote
+          repo: cldcvr/codepipes-example-worker
           reference: latest
-      creds:
-        - cloud
-
-
-  - name: voting-worker
-      description: Standalone worker for voting
-      appConfig:
-        version: 1
-      artifacts:
-        - name: Worker_Container_Image
-          id: 3e9f0abf-c768-499d-8c46-52455622dc
-          containerImage:
-            provider: dockerhub_container_registry
-            repo: cldcvr/codepipes-example-worker
-            reference: latest
-      creds:
-        - cloud
+    creds:
+      - cloud
