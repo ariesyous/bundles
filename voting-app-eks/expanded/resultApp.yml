@@ -14,4 +14,3 @@ application:
         reference: latest
   creds:
     - cloud
-    - git
