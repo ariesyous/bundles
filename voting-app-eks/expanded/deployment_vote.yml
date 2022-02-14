@@ -16,7 +16,7 @@ deployment:
       moduleRefId: aws:basic-eks-regional@1
       inputs:
         cluster: "${terraform.cluster_name.value}"
-        region:  "{terraform.cluster_region.value}"
+        region:  "${terraform.cluster_region.value}"
         roleArn:  "${terraform.eks_arn.value}"
         ports:
           -  name: "vote"
